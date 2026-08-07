@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T20 Pro Predictor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;    /* Dark Blue/Grey */
+            --accent: #e74c3c;     /* Red Accent like in your image */
+            --bg: #f4f7f6;
+            --sidebar-bg: #ffffff;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            color: #333;
+        }
+
+        /* --- LEFT SIDEBAR (Inputs) --- */
+        .sidebar {
+            width: 320px;
+            background-color: var(--sidebar-bg);
+            padding: 2rem;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        .btn-predict {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn-predict:hover {
+            background-color: #c0392b;
+        }
+
+        /* --- RIGHT MAIN CONTENT (Results) --- */
+        .main-content {
+            flex: 1;
+            padding: 3rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 2.5rem;
+        }
+        .header h1 { font-size: 2.5rem; margin: 0; color: var(--primary); }
+        .header p { color: #7f8c8d; font-size: 1.1rem; margin-top: 5px; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid var(--primary);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Result Section */
+        .result-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #f0f0f0;
+        }
+
+        .result-info h2 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: #444;
+        }
+
+        .result-score {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .badge {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #aaa;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; padding: 1.5rem; box-sizing: border-box; }
+            .main-content { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-chart-line"></i> T20 Predictor
+        </div>
+
+        <form action="/predict" method="POST">
+            <div class="form-group">
+                <label>Current Overs (e.g. 10.2)</label>
+                <input type="number" step="0.1" id="overs" name="overs" placeholder="0.0" required 
+                       value="{{ request.form['overs'] if request.form['overs'] else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Current Score</label>
+                <input type="number" id="score" name="score" placeholder="0" required
+                       value="{{ request.form['score'] if request.form['score'] else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Wickets Fallen</label>
+                <input type="number" name="wickets" placeholder="0-10" min="0" max="10" required
+                       value="{{ request.form['wickets'] if request.form['wickets'] else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Runs in Last 5 Overs</label>
+                <input type="number" name="runs_last_5" placeholder="0" required
+                       value="{{ request.form['runs_last_5'] if request.form['runs_last_5'] else '' }}">
+            </div>
+
+            <button type="submit" class="btn-predict">
+                <i class="fas fa-magic"></i> Predict Score
+            </button>
+        </form>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Match Dashboard</h1>
+            <p>Live analysis and AI-powered score projection.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Current Run Rate</h3>
+                <div class="value" id="crr-display">0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Projected (Current Rate)</h3>
+                <div class="value" id="projected-display">0</div>
+            </div>
+            <div class="stat-card" style="border-left-color: var(--accent);">
+                <h3>Balls Remaining</h3>
+                <div class="value" id="balls-display">120</div>
+            </div>
+        </div>
+
+        {% if prediction %}
+        <div class="result-box">
+            <div class="result-info">
+                <div class="badge"><i class="fas fa-check"></i> MODEL PREDICTION</div>
+                <h2>Predicted Final Score</h2>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 5px;">Based on {{ request.form['overs'] }} overs data</p>
+            </div>
+            <div class="result-score">
+                {{ prediction }}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-arrow-left" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <p>Enter match details in the sidebar to generate a prediction.</p>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div style="margin-top: 20px; color: red; background: #ffebee; padding: 15px; border-radius: 8px;">
+            <strong>Error:</strong> {{ error }}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Select elements
+        const oversInput = document.getElementById('overs');
+        const scoreInput = document.getElementById('score');
+        const crrDisplay = document.getElementById('crr-display');
+        const projDisplay = document.getElementById('projected-display');
+        const ballsDisplay = document.getElementById('balls-display');
+
+        function updateLiveStats() {
+            const overs = parseFloat(oversInput.value) || 0;
+            const score = parseInt(scoreInput.value) || 0;
+
+            if (overs > 0) {
+                // Convert 10.2 to balls
+                const overPart = Math.floor(overs);
+                const ballPart = Math.round((overs - overPart) * 10);
+                const totalBalls = (overPart * 6) + ballPart;
+                const ballsRemaining = 120 - totalBalls;
+
+                // Calculate CRR
+                const crr = (score / totalBalls) * 6;
+                
+                // Calculate Basic Projection
+                const projected = Math.round(score + (crr * (ballsRemaining/6)));
+
+                // Update DOM
+                crrDisplay.innerText = crr.toFixed(2);
+                projDisplay.innerText = projected;
+                ballsDisplay.innerText = ballsRemaining;
+            }
+        }
+
+        // Add event listeners to update as you type
+        oversInput.addEventListener('input', updateLiveStats);
+        scoreInput.addEventListener('input', updateLiveStats);
+        
+        // Init on load
+        updateLiveStats();
+    </script>
+</body>
+</html>
